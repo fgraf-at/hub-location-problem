@@ -1,340 +1,281 @@
-package at.fgraf;
-
-import com.google.ortools.Loader;
-import com.google.ortools.linearsolver.MPConstraint;
-import com.google.ortools.linearsolver.MPObjective;
-import com.google.ortools.linearsolver.MPSolver;
-import com.google.ortools.linearsolver.MPVariable;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
-public class HubLocationProblemBig {
-    public static void main(String[] args) {
-        Instant startTime = Instant.now();
-        Loader.loadNativeLibraries();
-
-        // creation of a solver
-        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-
-        int amountOrigins = 16;
-        int amountDestinations = 48;
-        int amountHubs = 32;
-
-
-
-        //Demand
-        int[] demandOrigins =       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //for completness, according to model, origins have 0 demand,
-        int[] demandDestinations =  {150, 110, 100, 95, 135, 90, 120, 105, 125, 50, 60, 53, 82, 62, 87, 21, 42, 74, 64, 52, 81, 34, 72, 83, 56, 97, 85,45, 55 ,34,52,55 ,34, 34, 63, 234,66,23,64, 34, 88, 53, 55, 43, 54, 45, 59, 345,43,54 };
-
-        double[][] Wij =  new double[demandOrigins.length][demandDestinations.length];
-
-
-        for (int i = 0; i < demandOrigins.length; i++) {
-            for (int j = 0; j < demandDestinations.length; j++) {
-                Wij[i][j] = demandOrigins[i] + demandDestinations[j];
-            }
-        }
-
-        // assignment cost of each OD pair
-        int[][][][] Cijkm  = new int[amountOrigins][amountDestinations][amountHubs][amountHubs];
-
-
-
-
-        int[][] distancesFromOriginsToHubs = {
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-                {10, 25, 50, 60, 75, 100, 110, 130, 150, 160, 175, 200, 220, 230, 245, 260, 270, 290, 300, 315, 330, 350, 370, 380, 390, 400, 410, 430, 450, 460, 480, 500},
-                {20, 45, 30, 65, 90, 70, 95, 120, 140, 145, 170, 195, 210, 235, 240, 265, 290, 305, 310, 335, 360, 375, 390, 395, 420, 425, 450, 475, 490, 505, 520, 545},
-
-        };
-
-
-        int[][] distancesToHubs = {
-            {0, 50, 100, 120, 180, 250, 280, 340, 400, 450, 500, 520, 580, 640, 680, 700, 760, 810, 860, 920, 960, 1000, 1040, 1100, 1120, 1160, 1200, 1240, 1280, 1320, 1360, 1400},
-            {50, 0, 60, 80, 140, 210, 240, 300, 360, 410, 460, 480, 540, 600, 640, 660, 720, 770, 820, 880, 920, 960, 1000, 1060, 1080, 1120, 1160, 1200, 1240, 1280, 1320, 1360},
-
-            {100, 60, 0, 20, 80, 150, 180, 240, 300, 350, 400, 420, 480, 540, 580, 600, 660, 710, 760, 820, 860, 900, 940, 1000, 1020, 1060, 1100, 1140, 1180, 1220, 1260, 1300},
-            {120, 80, 20, 0, 60, 130, 160, 220, 280, 330, 380, 400, 460, 520, 560, 580, 640, 690, 740, 800, 840, 880, 920, 980, 1000, 1040, 1080, 1120, 1160, 1200, 1240, 1280},
-            {190, 140, 80, 60, 0, 70, 100, 160, 220, 270, 320, 340, 400, 460, 500, 520, 580, 630, 680, 740, 780, 820, 860, 920, 940, 980, 1020, 1060, 1100, 1140, 1180, 1220},
-            {260, 210, 150, 130, 70, 0, 30, 90, 150, 200, 250, 270, 330, 390, 430, 450, 510, 560, 610, 670, 710, 750, 790, 850, 870, 910, 950, 990, 1030, 1070, 1110, 1150},
-
-            {290, 240, 180, 160, 100, 30, 0, 60, 120, 170, 220, 240, 300, 360, 400, 420, 480, 530, 580, 640, 680, 720, 760, 820, 840, 880, 920, 960, 1000, 1040, 1080, 1120},
-            {350, 300, 240, 220, 160, 90, 60, 0, 60, 110, 160, 180, 240, 300, 340, 360, 420, 470, 520, 580, 620, 660, 700, 760, 780, 820, 860, 900, 940, 980, 1020, 1060},
-            {410, 360, 300, 280, 220, 150, 120, 60, 0, 50, 100, 120, 180, 240, 280, 300, 360, 410, 460, 520, 560, 600, 640, 700, 720, 760, 800, 840, 880, 920, 960, 1000},
-            {460, 410, 350, 330, 270, 200, 170, 110, 50, 0, 50, 70, 130, 190, 230, 250, 310, 360, 410, 470, 510, 550, 590, 650, 670, 710, 750, 790, 830, 870, 910, 950},
-
-            {510, 460, 400, 380, 320, 250, 220, 160, 100, 50, 0, 40, 100, 160, 200, 220, 280, 330, 380, 440, 480, 520, 560, 620, 640, 680, 720, 760, 800, 840, 880, 920},
-            {550, 500, 440, 420, 360, 290, 240, 180, 120, 70, 40, 0, 60, 120, 160, 180, 240, 290, 340, 400, 440, 480, 520, 580, 600, 640, 680, 720, 760, 800, 840, 880},
-            {610, 560, 500, 480, 420, 350, 300, 240, 180, 130, 100, 60, 0, 60, 100, 120, 180, 230, 280, 340, 380, 420, 460, 520, 540, 580, 620, 660, 700, 740, 780, 820},
-            {670, 620, 560, 540, 480, 410, 360, 300, 240, 190, 160, 120, 60, 0, 40, 60, 120, 170, 220, 280, 320, 360, 400, 460, 480, 520, 560, 600, 640, 680, 720, 760},
-
-            {710, 660, 600, 580, 520, 450, 400, 340, 280, 230, 200, 160, 100, 40, 0, 20, 80, 130, 180, 240, 280, 320, 360, 420, 440, 480, 520, 560, 600, 640, 680, 720},
-            {730, 680, 620, 600, 540, 470, 420, 360, 300, 250, 220, 180, 120, 60, 20, 0, 60, 110, 160, 220, 260, 300, 340, 400, 420, 460, 500, 540, 580, 620, 660, 700},
-            {790, 740, 680, 660, 600, 530, 480, 420, 360, 310, 280, 240, 180, 120, 80, 60, 0, 50, 100, 160, 200, 240, 280, 340, 360, 400, 440, 480, 520, 560, 600, 640},
-            {840, 790, 730, 710, 650, 580, 530, 470, 410, 360, 330, 290, 230, 170, 130, 110, 50, 0, 50, 110, 150, 190, 230, 290, 310, 350, 390, 430, 470, 510, 550, 590},
-
-            {890, 840, 780, 760, 700, 630, 580, 520, 460, 410, 380, 340, 280, 220, 180, 160, 100, 50, 0, 60, 100, 140, 180, 240, 260, 300, 340, 380, 420, 460, 500, 540},
-            {950, 900, 840, 820, 760, 690, 640, 580, 520, 470, 440, 400, 340, 280, 240, 220, 160, 110, 60, 0, 40, 80, 120, 180, 200, 240, 280, 320, 360, 400, 440, 480},
-            {990, 940, 880, 860, 800, 730, 680, 620, 560, 510, 480, 440, 380, 320, 280, 260, 200, 150, 100, 40, 0, 40, 80, 140, 160, 200, 240, 280, 320, 360, 400, 440},
-            {1030, 980, 920, 900, 840, 770, 720, 660, 600, 550, 520, 480, 420, 360, 320, 300, 240, 190, 140, 80, 40, 0, 40, 100, 120, 160, 200, 240, 280, 320, 360, 400},
-
-            {1070, 1020, 960, 940, 880, 810, 760, 700, 640, 590, 560, 520, 460, 400, 360, 340, 280, 230, 180, 120, 80, 40, 0, 60, 80, 120, 160, 200, 240, 280, 320, 360},
-            {1130, 1080, 1020, 1000, 940, 870, 820, 760, 700, 650, 620, 580, 520, 460, 420, 400, 340, 290, 240, 180, 140, 100, 60, 0, 40, 80, 120, 160, 200, 240, 280, 320},
-            {1170, 1120, 1060, 1040, 980, 910, 860, 800, 740, 690, 660, 620, 560, 500, 460, 440, 380, 330, 280, 200, 160, 120, 80, 40, 0, 40, 80, 120, 160, 200, 240, 280},
-            {1210, 1160, 1100, 1080, 1020, 950, 900, 840, 780, 730, 700, 660, 600, 540, 500, 480, 420, 370, 320, 240, 200, 160, 120, 80, 40, 0, 40, 80, 120, 160, 200, 240},
-
-            {1250, 1200, 1140, 1120, 1060, 990, 940, 880, 820, 770, 740, 700, 640, 580, 540, 520, 460, 410, 360, 280, 240, 200, 160, 120, 80, 40, 0, 40, 80, 120, 160, 200},
-            {1290, 1240, 1180, 1160, 1100, 1030, 980, 920, 860, 810, 780, 740, 680, 620, 580, 560, 500, 450, 400, 320, 280, 240, 200, 160, 120, 80, 40, 0, 40, 80, 120, 160},
-            {1330, 1280, 1220, 1200, 1140, 1070, 1020, 960, 900, 850, 820, 780, 720, 660, 620, 600, 540, 490, 440, 360, 320, 280, 240, 200, 160, 120, 80, 40, 0, 40, 80, 120},
-            {1370, 1320, 1260, 1240, 1180, 1110, 1060, 1000, 940, 890, 860, 820, 760, 700, 660, 640, 580, 530, 480, 400, 360, 320, 280, 240, 200, 160, 120, 80, 40, 0, 40, 80},
-
-            {1280, 1240, 1180, 1160, 1100, 1030, 1000, 940, 880, 830, 780, 760, 700, 640, 600, 580, 520, 470, 420, 360, 320, 280, 240, 180, 160, 120, 80, 40, 0, 60, 100, 140},
-            {1320, 1280, 1220, 1200, 1140, 1070, 1040, 980, 920, 870, 820, 800, 740, 680, 640, 620, 560, 510, 460, 400, 360, 320, 280, 220, 200, 160, 120, 80, 60, 0, 40, 100},
-            {1360, 1320, 1260, 1240, 1180, 1110, 1080, 1020, 960, 910, 860, 840, 780, 720, 680, 660, 600, 550, 500, 440, 400, 360, 320, 260, 240, 200, 160, 120, 80, 40, 0, 60},
-            {1400, 1360, 1300, 1280, 1220, 1150, 1120, 1060, 1000, 950, 900, 880, 820, 760, 720, 700, 660, 610, 560, 500, 460, 420, 380, 320, 300, 260, 220, 180, 140, 100, 60, 0}
-        };
-
-
-
-
-
-
-        int[][] distanceToDest = {
-                {
-                 120, 250, 340, 430, 210, 60, 150, 80, 320, 270,50, 140, 100, 40, 200, 90, 160, 110, 30, 70,
-                 180, 20, 240, 190, 10, 290, 230, 260, 300, 130,170, 220, 280, 310, 360, 400, 380, 390, 420, 450,
-                 480, 510, 520, 530, 550, 580, 600, 630
-                },
-                {110, 240, 330, 420, 200, 50, 140, 70, 310, 260,40, 130, 90, 30, 190, 80, 150, 100, 20, 60,170, 10, 230, 180, 9, 280, 220, 250, 290, 120,
-                 160, 210, 270, 300, 350, 390, 370, 380, 410, 440, 470, 500, 510, 520, 540, 570, 590, 620
-                },
-                {105, 235, 325, 415, 195, 45, 135, 65, 305, 255, 35, 125, 85, 25, 185, 75, 145, 95, 15, 55, 165, 5, 225, 175, 8, 275, 215, 245, 285, 115, 155, 205, 265, 295, 345, 385, 365, 375, 405, 435, 465, 495, 505, 515, 535, 565, 585, 615},
-                {95, 225, 315, 405, 185, 35, 125, 55, 295, 245, 25, 115, 75, 15, 175, 65, 135, 85, 5, 45, 155, 0, 215, 165, 7, 265, 205, 235, 275, 105, 145, 195, 255, 285, 335, 375, 355, 365, 395, 425, 455, 485, 495, 505, 525, 555, 575, 605},
-
-                {110, 250, 340, 430, 210, 60, 150, 90, 310, 260, 40, 130, 90, 30, 190, 80, 150, 100, 20, 60, 170, 10, 230, 180, 12, 280, 220, 250, 290, 120, 160, 210, 270, 300, 350, 390, 370, 380, 410, 440, 470, 500, 510, 520, 540, 570, 590, 620},
-                {100, 240, 330, 420, 200, 50, 140, 80, 300, 250, 30, 120, 80, 20, 180, 70, 140, 90, 10, 50, 160, 5, 220, 170, 11, 270, 210, 240, 280, 110, 150, 200, 260, 290, 340, 380, 360, 370, 400, 430, 460, 490, 500, 510, 530, 560, 580, 610},
-                {90, 230, 320, 410, 190, 40, 130, 70, 290, 240, 20, 110, 70, 10, 170, 60, 130, 80, 0, 40, 150, 0, 210, 160, 10, 260, 200, 230, 270, 100, 140, 190, 250, 280, 330, 370, 350, 360, 390, 420, 450, 480, 490, 500, 520, 550, 570, 600},
-                {80, 220, 310, 400, 180, 30, 120, 60, 280, 230, 10, 100, 60, 0, 160, 50, 120, 70, 0, 30, 140, 0, 200, 150, 9, 250, 190, 220, 260, 90, 130, 180, 240, 270, 320, 360, 340, 350, 380, 410, 440, 470, 480, 490, 510, 540, 560, 590},
-
-                {85, 219, 310, 100, 160, 30, 120, 60, 80, 47, 10, 100, 69, 0, 169, 50, 120, 70, 0, 30, 140, 0, 200, 18, 9, 250, 190, 220, 20, 90, 10, 10, 20, 70, 20, 360, 340, 50, 380, 410, 40, 70, 80, 90, 50, 54, 56, 59},
-                {70, 210, 300, 390, 170, 20, 110, 50, 270, 220, 0, 90, 50, 0, 150, 40, 110, 60, 0, 20, 130, 0, 190, 140, 8, 240, 180, 210, 250, 80, 120, 170, 230, 260, 310, 350, 330, 340, 370, 400, 430, 460, 470, 480, 500, 530, 550, 580},
-                {60, 200, 290, 380, 160, 10, 100, 40, 260, 210, 0, 80, 40, 0, 140, 30, 100, 50, 0, 10, 120, 0, 180, 130, 7, 230, 170, 200, 240, 70, 110, 160, 220, 250, 300, 340, 320, 330, 360, 390, 420, 450, 460, 470, 490, 520, 540, 570},
-                {50, 190, 280, 370, 150, 0, 90, 30, 250, 200, 0, 70, 30, 0, 130, 20, 90, 40, 0, 0, 110, 0, 170, 120, 6, 220, 160, 190, 230, 60, 100, 150, 210, 240, 290, 330, 310, 320, 350, 380, 410, 440, 450, 460, 480, 510, 530, 560},
-
-                {37, 173, 269, 348, 138, 0, 79, 12, 238, 182, 0, 52, 11, 0, 119, 8, 71, 29, 0, 0, 91, 0, 157, 102, 6, 198, 147, 179, 212, 47, 88, 134, 196, 226, 278, 316, 293, 307, 339, 362, 397, 421, 434, 446, 467, 497, 512, 546},
-                {33, 167, 261, 341, 129, 0, 67, 9, 226, 177, 0, 49, 9, 0, 103, 0, 68, 22, 0, 0, 86, 0, 143, 97, 5, 194, 139, 162, 208, 38, 74, 127, 187, 211, 268, 303, 279, 296, 324, 353, 382, 417, 427, 437, 452, 483, 508, 534},
-                {29, 161, 253, 334, 121, 0, 63, 4, 219, 171, 0, 44, 4, 0, 104, 0, 66, 17, 0, 0, 84, 0, 142, 94, 3, 192, 136, 168, 201, 32, 72, 123, 186, 213, 261, 307, 287, 292, 321, 359, 388, 412, 424, 434, 458, 475, 504, 523},
-                {21, 154, 246, 329, 115, 0, 58, 3, 214, 164, 0, 39, 2, 0, 98, 0, 61, 14, 0, 0, 81, 0, 137, 88, 1, 184, 131, 155, 197, 28, 67, 117, 174, 205, 256, 297, 273, 283, 317, 348, 372, 403, 419, 426, 441, 468, 498, 515},
-
-                {25, 186, 281, 378, 162, 0, 83, 15, 252, 198, 50, 56, 14, 0, 131, 10, 77, 33, 32, 78, 99, 8, 167, 112, 8, 218, 167, 189, 222, 57, 98, 144, 206, 236, 288, 326, 303, 317, 349, 372, 407, 431, 444, 456, 477, 507, 522, 556},
-                {39, 179, 273, 353, 141, 0, 75, 11, 239, 183, 70, 53, 12, 0, 119, 9, 72, 30, 443, 6, 92, 0, 158, 103, 7, 199, 148, 180, 213, 48, 89, 135, 197, 227, 279, 317, 294, 308, 340, 363, 398, 422, 435, 447, 468, 498, 513, 547},
-                {32, 162, 254, 335, 122, 0, 64, 5, 220, 172, 88, 45, 5, 0, 105, 1, 67, 18, 33, 45, 85, 0, 143, 95, 4, 193, 137, 169, 202, 33, 73, 124, 187, 214, 262, 308, 288, 293, 322, 360, 389, 413, 425, 435, 459, 476, 505, 524},
-                {22, 155, 247, 330, 116, 0, 59, 3, 215, 165, 99, 40, 3, 0, 99, 1, 62, 15, 77, 4, 82, 0, 138, 89, 2, 185, 132, 156, 198, 29, 68, 118, 175, 206, 257, 298, 274, 284, 318, 349, 373, 404, 420, 427, 442, 469, 499, 516},
-
-                {35, 173, 266, 347, 134, 0, 71, 9, 232, 176, 122, 49, 8, 0, 113, 7, 76, 28, 0, 0, 96, 0, 151, 109, 6, 206, 155, 177, 210, 46, 87, 129, 191, 221, 273, 311, 288, 302, 334, 357, 392, 416, 429, 441, 462, 492, 507, 541},
-                {28, 148, 239, 320, 107, 0, 56, 4, 207, 159, 34, 42, 7, 0, 94, 5, 61, 23, 0, 0, 79, 0, 137, 94, 3, 180, 127, 149, 182, 35, 78, 120, 182, 212, 264, 302, 279, 293, 325, 348, 383, 407, 420, 432, 453, 483, 498, 532},
-                {41, 136, 227, 309, 95, 0, 63, 88, 198, 153, 66, 37, 2, 0, 88, 3, 70, 17, 0, 0, 72, 0, 126, 81, 1, 174, 121, 143, 176, 29, 69, 111, 173, 203, 255, 293, 270, 284, 316, 339, 374, 398, 411, 423, 444, 474, 489, 523},
-                {17, 125, 216, 298, 84, 0, 50, 42, 189, 147, 73, 32, 0, 0, 80, 0, 59, 11, 0, 0, 65, 0, 115, 72, 0, 162, 110, 132, 165, 24, 62, 102, 164, 194, 246, 284, 261, 275, 307, 330, 365, 389, 402, 414, 435, 465, 480, 514},
-
-                {47, 112, 205, 286, 73, 0, 38, 13, 177, 137, 0, 26, 10, 0, 71, 9, 48, 6, 0, 0, 58, 0, 104, 63, 5, 150, 98, 120, 153, 16, 53, 93, 155, 185, 237, 275, 252, 266, 298, 321, 356, 380, 393, 405, 426, 456, 471, 505},
-                {33, 100, 193, 275, 61, 0, 25, 17, 165, 128, 0, 21, 14, 0, 62, 13, 36, 0, 0, 0, 50, 0, 93, 52, 9, 137, 86, 108, 141, 8, 44, 84, 146, 176, 228, 266, 243, 257, 289, 312, 347, 371, 384, 396, 417, 447, 462, 496},
-                {20, 87, 180, 262, 48, 0, 12, 21, 153, 119, 0, 15, 18, 0, 53, 17, 24, 0, 0, 0, 42, 0, 81, 41, 13, 125, 74, 96, 129, 0, 35, 75, 137, 167, 219, 257, 234, 248, 280, 303, 338, 362, 375, 387, 408, 438, 453, 487},
-                {7, 74, 167, 249, 35, 0, 0, 25, 141, 110, 0, 9, 22, 0, 44, 21, 12, 0, 0, 0, 34, 0, 69, 30, 17, 113, 62, 84, 117, 0, 26, 66, 128, 158, 210, 248, 225, 239, 271, 294, 329, 353, 366, 378, 399, 429, 444, 478},
-
-                {17, 61, 154, 236, 23, 45, 7, 31, 129, 98, 0, 3, 26, 0, 35, 25, 0, 0, 0, 0, 26, 0, 57, 19, 21, 101, 50, 72, 105, 0, 17, 57, 120, 150, 202, 240, 217, 231, 263, 286, 321, 345, 358, 370, 391, 421, 436, 470},
-                {4, 48, 141, 223, 10, 0, 12, 37, 117, 86, 0, 0, 30, 0, 26, 29, 0, 23, 43, 0, 18, 0, 45, 8, 25, 89, 38, 60, 93, 0, 8, 48, 112, 142, 194, 232, 209, 223, 255, 278, 313, 337, 350, 362, 383, 413, 428, 462},
-                {0, 35, 128, 210, 0, 5, 57, 43, 105, 74, 0, 0, 34, 0, 17, 33, 0, 48, 0, 5, 10, 0, 33, 0, 29, 77, 26, 48, 81, 0, 0, 39, 104, 134, 186, 224, 201, 215, 247, 270, 305, 329, 342, 354, 375, 405, 420, 454},
-                {0, 22, 115, 197, 0, 0, 9, 49, 93, 62, 0, 0, 38, 0, 8, 37, 0, 0, 0, 40, 2, 60, 21, 0, 33, 65, 14, 36, 69, 0, 0, 30, 96, 126, 178, 216, 193, 207, 239, 262, 297, 321, 334, 346, 367, 397, 412, 446},
-
-
-        };
-
-        // Hub openingCosts
-        int[] Fk = {
-                5000, 6000, 5500, 4000, 0, 5200, 4800, 5300,
-                6200, 5700, 5100, 4700, 4200, 5800, 5900, 5600,
-                6300, 4900, 4300, 4600, 5000, 5400, 6000, 6100,
-                6400, 6500, 6600, 6700, 6800, 6900, 7000, 7100};
-
-
-        // Create the decision variables
-        List<List<List<List<MPVariable>>>> Xijkm = new ArrayList<>(); // assignmentVars // X_{ijkm}
-        for (int i = 0; i < amountOrigins; i++) {
-            Xijkm.add(new ArrayList<>()); // List<List<MPVariable>>
-            for (int j = 0; j < amountDestinations; j++) {
-                Xijkm.get(i).add(new ArrayList<>()); // List<MPVariable>
-                for (int k = 0; k < amountHubs; k++) {
-                    Xijkm.get(i).get(j).add(new ArrayList<>()); // MPVariable
-                    for (int m = 0; m < amountHubs; m++) {
-                        Xijkm.get(i).get(j).get(k).add(solver.makeNumVar(0.0, 1.0, "X_" + i + "_" + j + "_" + k + "_" + m));
-                    }
-                }
-            }
-        } // Xijkm
-
-
-
-
-        //calculation of Cijkm
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-
-                        var Cik = distancesFromOriginsToHubs[i][k];  //+ distanceOrigins[i];
-
-                        var Ckm = distancesToHubs[k][m];
-
-                        var Cmj = distanceToDest[m][j];
-
-                        Cijkm[i][j][k][m] =  (Cik + Ckm + Cmj);
-                    }
-                }
-            }
-        } // Cijkm
-
-
-
-
-        // Creation of the Hubopeningvariable
-        MPVariable[] Yk = new MPVariable[amountHubs]; // Y_k
-        for (int k = 0; k < amountHubs; k++) {
-                Yk[k]= solver.makeNumVar(0.0, 1, "Y_k_"+ k);
-        }
-
-
-
-
-
-        // Set the objective function
-        MPObjective obj = solver.objective();
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-                        obj.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), Wij[i][j] * Cijkm[i][j][k][m]);
-                    }
-                }
-            }
-        }
-
-        for (int k = 0; k < amountHubs ; k++) {
-           obj.setCoefficient(Yk[k], Fk[k]);
-
-        }
-
-        obj.setMinimization();
-
-        // Constraint 1: Sum of X_ijkm over Hubs k and m needs to be 1 1 for all i, j
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                MPConstraint c1 = solver.makeConstraint(1.0, 1.0, "c1_" + i + "_" + j);
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-                        c1.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
-                    }
-                }
-            }
-        } // c1
-
-
-        // Constraint 2: X_ijkm less or equal Y_k for all i, j, k, m
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-                        MPConstraint c2 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c2_" + i + "_" + j + "_" + k + "_" + m);
-                        c2.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
-                        c2.setCoefficient(Yk[k], -1);
-
-                    }
-                }
-            }
-        } // c2
-
-        // Constraint 3: X_ijkm less or equal Y_m  i, j, for all i, j, k, m
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-                        MPConstraint c3 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c_3" + i + "_" + j + "_" + k + "_" + m);
-                        c3.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
-                        c3.setCoefficient(Yk[m], -1);
-                    }
-                }
-            }
-        } // c3
-
-
-
-        // Solve the problem
-        MPSolver.ResultStatus resultStatus = solver.solve();
-        if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
-            System.err.println("The problem does not have a solution.");
-            return;
-        }
-
+//package at.fgraf;
+//
+//import com.google.ortools.Loader;
+//import com.google.ortools.linearsolver.MPConstraint;
+//import com.google.ortools.linearsolver.MPObjective;
+//import com.google.ortools.linearsolver.MPSolver;
+//import com.google.ortools.linearsolver.MPVariable;
+//
+//import java.awt.*;
+//import java.time.Duration;
+//import java.time.Instant;
+//import java.util.ArrayList;
+//import java.util.List;
+//import java.util.Random;
+//
+//public class HubLocationProblemBig {
+//
+//
+//
+//    public static double distance(Point p1, Point p2) {
+//        int dx = p1.x - p2.x;
+//        int dy = p1.y - p2.y;
+//        return Math.sqrt(dx * dx + dy * dy);
+//    }
+//
+//    public static double[][] createDistanceMatrix(List<Point> points1, List<Point> points2) {
+//        int size1 = points1.size();
+//        int size2 = points2.size();
+//        double[][] matrix = new double[size1][size2];
+//
+//        for (int i = 0; i < size1; i++) {
+//            for (int j = 0; j < size2; j++) {
+//                matrix[i][j] = distance(points1.get(i), points2.get(j));
+//            }
+//        }
+//
+//        return matrix;
+//    }
+//
+//
+//
+//    public static void main(String[] args) {
+//        Instant startTime = Instant.now();
+//        Loader.loadNativeLibraries();
+//
+//        // creation of a solver
+//        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+//
+//        int amountOrigins = 100;
+//        int amountDestinations = 110;
+//        int amountHubs = 60;
+//
+//
+//        int numberOfPoints = 270;
+//        int numberOfOrigins = 100;
+//        int numberOfHubs = 60;
+//        int numberOfDestinations = 110;
+//        int[] Fk = {
+//                5000, 6000, 5500, 4000, 5550, 5200, 4800, 5300, 6200, 5700,
+//                6200, 5700, 5100, 4700, 4200, 5800, 5900, 5600, 6300, 4900,
+//                4300, 4600, 5000, 5400, 6000, 6100, 6400, 6500, 6600, 6700,
+//                6800, 6900, 7000, 7100, 5000, 6000, 5500, 4000, 5532, 5200,
+//                4800, 5300, 6200, 5700, 5100, 4700, 4200, 5800, 5900, 5600,
+//                6300, 4900, 4300, 4600, 5000, 5400, 6000, 6100, 6400, 6500 };
+//        //Demand
+//        int[] demandOrigins = new int[100];
+//        for (int i = 0; i < demandOrigins.length; i++) {
+//            demandOrigins[i] = 0;
+//        }
+//
+//        int[] demandDestinations = new int[110];
+//        for (int i = 0; i < demandDestinations.length; i++) {
+//            demandDestinations[i] = (int) (Math.random() * (9999 - 1000 + 1)) + 1000;
+//        }
+//
+//
+//
+//        Random random = new Random();
+//        List<Point> origins = new ArrayList<>();
+//        List<Point> hubs = new ArrayList<>();
+//        List<Point> destinations = new ArrayList<>();
+//
+//
+//        // Generieren von zufälligen Quellen-Punkten
+//        for (int i = 0; i < numberOfOrigins; i++) {
+//            int x = random.nextInt(300); // Generiert zufällige x-Koordinate im Bereich von 0 bis 299
+//            int y = random.nextInt(100); // Generiert zufällige y-Koordinate im Bereich von 0 bis 99
+//            origins.add(new Point(x, y));
+//        }
+//
+//        // Generieren von zufälligen Hubs-Punkten
+//        for (int i = 0; i < numberOfHubs; i++) {
+//            int x = 300 + random.nextInt(300); // Generiert zufällige x-Koordinate im Bereich von 300 bis 599
+//            int y = random.nextInt(100); // Generiert zufällige y-Koordinate im Bereich von 0 bis 99
+//            hubs.add(new Point(x, y));
+//        }
+//
+//        // Generieren von zufälligen Senken-Punkten
+//        for (int i = 0; i < numberOfDestinations; i++) {
+//            int x = 600 + random.nextInt(300); // Generiert zufällige x-Koordinate im Bereich von 600 bis 899
+//            int y = random.nextInt(100); // Generiert zufällige y-Koordinate im Bereich von 0 bis 99
+//            destinations.add(new Point(x, y));
+//        }
+//
+//
+//        var distancesFromOriginsToHubs = createDistanceMatrix(origins, hubs);
+//        var distancesToHubs = createDistanceMatrix(hubs, hubs);
+//        var distanceToDest = createDistanceMatrix(hubs, destinations);
+//
+//
+//
+//
+//
+//    // Create the decision variables
+//        List<List<List<List<MPVariable>>>> Xijkm = new ArrayList<>(); // assignmentVars // X_{ijkm}
+//        for (int i = 0; i < amountOrigins; i++) {
+//            Xijkm.add(new ArrayList<>()); // List<List<MPVariable>>
+//            for (int j = 0; j < amountDestinations; j++) {
+//                Xijkm.get(i).add(new ArrayList<>()); // List<MPVariable>
+//                for (int k = 0; k < amountHubs; k++) {
+//                    Xijkm.get(i).get(j).add(new ArrayList<>()); // MPVariable
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        Xijkm.get(i).get(j).get(k).add(solver.makeNumVar(0.0, 1.0, "X_" + i + "_" + j + "_" + k + "_" + m));
+//                    }
+//                }
+//            }
+//        } // Xijkm
+//
+//
+//        double[][] Wij =  new double[demandOrigins.length][demandDestinations.length];
+//
+//
+//        for (int i = 0; i < demandOrigins.length; i++) {
+//            for (int j = 0; j < demandDestinations.length; j++) {
+//                Wij[i][j] = demandOrigins[i] + demandDestinations[j];
+//            }
+//        }
+//
+//        // assignment cost of each OD pair
+//        double[][][][] Cijkm  = new double[amountOrigins][amountDestinations][amountHubs][amountHubs];
+//
+//        //calculation of Cijkm
 //        for (int i = 0; i < amountOrigins; i++) {
 //            for (int j = 0; j < amountDestinations; j++) {
-//
 //                for (int k = 0; k < amountHubs; k++) {
 //                    for (int m = 0; m < amountHubs; m++) {
-//                        if( Xijkm.get(i).get(j).get(k).get(m).solutionValue() > 0) {
-//                            System.out.println("OD pair (" + i + ", " + (amountOrigins+ j) + ") routed through hubs " + k + " and " + (m));
+//
+//                        var Cik = distancesFromOriginsToHubs[i][k];  //+ distanceOrigins[i];
+//
+//                        var Ckm = distancesToHubs[k][m];
+//
+//                        var Cmj = distanceToDest[m][j];
+//
+//                        Cijkm[i][j][k][m] =  (Cik + Ckm + Cmj);
+//                    }
+//                }
+//            }
+//        } // Cijkm
+//
+//
+//
+//
+//        // Creation of the Hubopeningvariable
+//        MPVariable[] Yk = new MPVariable[amountHubs]; // Y_k
+//        for (int k = 0; k < amountHubs; k++) {
+//            Yk[k]= solver.makeBoolVar( "Y_k_"+ k);
+//        }
+//
+//        // Set the objective function
+//        MPObjective obj = solver.objective();
+//        for (int i = 0; i < amountOrigins; i++) {
+//            for (int j = 0; j < amountDestinations; j++) {
+//                for (int k = 0; k < amountHubs; k++) {
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        obj.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), Wij[i][j] * Cijkm[i][j][k][m]);
+//                    }
+//                }
+//            }
+//        }
+//
+//        for (int k = 0; k < amountHubs ; k++) {
+//           obj.setCoefficient(Yk[k], Fk[k]);
+//
+//        }
+//
+//        obj.setMinimization();
+//
+//        // Constraint 1: Sum of X_ijkm over Hubs k and m needs to be 1 1 for all i, j
+//        for (int i = 0; i < amountOrigins; i++) {
+//            for (int j = 0; j < amountDestinations; j++) {
+//                MPConstraint c1 = solver.makeConstraint(1.0, 1.0, "c1_" + i + "_" + j);
+//                for (int k = 0; k < amountHubs; k++) {
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        c1.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
+//                    }
+//                }
+//            }
+//        } // c1
+//
+//
+//        // Constraint 2: X_ijkm less or equal Y_k for all i, j, k, m
+//        for (int i = 0; i < amountOrigins; i++) {
+//            for (int j = 0; j < amountDestinations; j++) {
+//                for (int k = 0; k < amountHubs; k++) {
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        MPConstraint c2 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c2_" + i + "_" + j + "_" + k + "_" + m);
+//                        c2.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
+//                        c2.setCoefficient(Yk[k], -1);
+//
+//                    }
+//                }
+//            }
+//        } // c2
+//
+//        // Constraint 3: X_ijkm less or equal Y_m  i, j, for all i, j, k, m
+//        for (int i = 0; i < amountOrigins; i++) {
+//            for (int j = 0; j < amountDestinations; j++) {
+//                for (int k = 0; k < amountHubs; k++) {
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        MPConstraint c3 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c_3" + i + "_" + j + "_" + k + "_" + m);
+//                        c3.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
+//                        c3.setCoefficient(Yk[m], -1);
+//                    }
+//                }
+//            }
+//        } // c3
+//
+//
+//
+//        // Solve the problem
+//        MPSolver.ResultStatus resultStatus = solver.solve();
+//        if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
+//            System.err.println("The problem does not have a solution.");
+//            return;
+//        }
+//
+////        for (int i = 0; i < amountOrigins; i++) {
+////            for (int j = 0; j < amountDestinations; j++) {
+////
+////                for (int k = 0; k < amountHubs; k++) {
+////                    for (int m = 0; m < amountHubs; m++) {
+////                        if( Xijkm.get(i).get(j).get(k).get(m).solutionValue() > 0) {
+////                            System.out.println("OD pair (" + i + ", " + (amountOrigins+ j) + ") routed through hubs " + k + " and " + (m));
+////                        }
+////                    }
+////                }
+////            }
+////        }
+//
+//
+//        System.out.println("\nSolution:");
+//        System.out.println("Objective value = " + solver.objective().value());
+//
+//// Print the assignment variables Xijkm
+//        System.out.println("\nXijkm variables:");
+//        for (int i = 0; i < amountOrigins; i++) {
+//            for (int j = 0; j < amountDestinations; j++) {
+//                for (int k = 0; k < amountHubs; k++) {
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        double value = Xijkm.get(i).get(j).get(k).get(m).solutionValue();
+//                        if (value > 0) {
+//                            System.out.printf("X_%d_%d_%d_%d = %.2f\n", i, j, k, m, value);
 //                        }
 //                    }
 //                }
 //            }
 //        }
-
-
-        System.out.println("\nSolution:");
-        System.out.println("Objective value = " + solver.objective().value());
-
-// Print the assignment variables Xijkm
-        System.out.println("\nXijkm variables:");
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-                        double value = Xijkm.get(i).get(j).get(k).get(m).solutionValue();
-                        if (value > 0) {
-                            System.out.printf("X_%d_%d_%d_%d = %.2f\n", i, j, k, m, value);
-                        }
-                    }
-                }
-            }
-        }
-
-        for (int k = 0; k < amountHubs; k++) {
-            if (Yk[k].solutionValue() > 0) {
-                System.out.println("Hub " + k + " is opened with cost " + Fk[k]);
-            }
-
-        }
-
-        Instant endTime = Instant.now();
-        Duration elapsedTime = Duration.between(startTime, endTime);
-        System.out.println("Time taken to solve the problem: " + elapsedTime.toMillis() + " milliseconds");
-
-    }
-}
+//
+//        for (int k = 0; k < amountHubs; k++) {
+//            if (Yk[k].solutionValue() > 0) {
+//                System.out.println("Hub " + k + " is opened with cost " + Fk[k]);
+//            }
+//
+//        }
+//
+//        Instant endTime = Instant.now();
+//        Duration elapsedTime = Duration.between(startTime, endTime);
+//        System.out.println("Time taken to solve the problem: " + elapsedTime.toMillis() + " milliseconds");
+//
+//    }
+//}

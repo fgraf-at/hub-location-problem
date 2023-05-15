@@ -17,14 +17,16 @@ public class HubLocationProblemSmall {
         Loader.loadNativeLibraries();
 
         // creation of a solver
-        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
 
         int amountOrigins = 3;
         int amountDestinations = 3;
         int amountHubs = 5;
+
+
         //Demand
-        int[] demandOrigins = {0, 0, 0}; //for completness, according to model, origins have 0 demand.
-        int[] demandDestinations = {150, 110, 100};
+        int[] demandOrigins = {0, 0, 0}; //for completness, according to model, origins have 0 demand, (no demand)
+        int[] demandDestinations = {23000, 11000, 14896};
 
 
         int[][] Wij =  new int[demandOrigins.length][demandDestinations.length];
@@ -37,40 +39,59 @@ public class HubLocationProblemSmall {
         }
 
         // assignment cost of each OD pair
-        int[][][][] Cijkm  = new int[amountOrigins][amountDestinations][amountHubs][amountHubs];
+        double[][][][] Cijkm  = new double[amountOrigins][amountDestinations][amountHubs][amountHubs];
+
+/*
 
 
-        int[] distancesFromOriginAToHubs = {95, 110, 120, 190, 185};
-        int[] distancesFromOriginBToHubs = {100, 90, 60, 170, 180};
-        int[] distancesFromOriginCToHubs = {120, 75, 95, 190, 170};
-        int[] distancesFromOriginDToHubs = {55, 70, 15, 65, 175};
-        int[] distancesFromOriginEToHubs = {75, 30, 65, 225, 140};
+235.0914715594762 235.58013498595335 276.5863337187866 156.54072952429985 109.17875251164945
+172.19175357722565 164.19500601419034 207.2920644887305 109.60383204979651 38.07886552931954
+180.71247881648904 171.74690681348528 214.84180226389836 119.81652640600127 48.25971404805462
 
-        int[] distHubAToHubs = {0, 20, 70, 85, 95};
-        int[] distHubBToHubs = {40, 0, 35, 80, 100};
-        int[] distHubCToHubs = {70, 20, 0, 25, 15};
-        int[] distHubDToHubs = {75, 15, 20, 0, 95};
-        int[] distHubEToHubs = {10, 20, 25, 15, 0};
 
-        int[] distHubAToDep = {98, 50, 60};
-        int[] distHubBToDep = {80, 30, 70};
-        int[] distHubCToDep = {75, 15, 70};
-        int[] distHubDToDep = {40, 25, 60};
-        int[] distHubEToDep = {35, 50, 75};
+0.0 25.495097567963924 43.9089968002003 80.00624975587844 136.7186892857008
+25.495097567963924 0.0 43.104524124504614 86.83893136145792 131.4610208388783
+43.9089968002003 43.104524124504614 0.0 123.30855606972291 174.18381095842403
+80.00624975587844 86.83893136145792 123.30855606972291 0.0 71.56116265125938
+136.7186892857008 131.4610208388783 174.18381095842403 71.56116265125938 0.0
 
-        int[][] distancesFromOriginsToHubs = {
+
+183.19934497699495 400.0799920015996 271.66523517005265
+194.81273059017474 406.34222030205035 279.48524111301475
+153.62942426501507 363.24096685258394 236.57979626333267
+255.38402455909414 476.3034746881446 347.0518693221519
+319.4276130831522 536.4513025429242 408.3356462519529
+
+
+Origins: [java.awt.Point[x=223,y=3], java.awt.Point[x=286,y=74], java.awt.Point[x=279,y=82]]
+Hubs: [java.awt.Point[x=455,y=41], java.awt.Point[x=450,y=66], java.awt.Point[x=493,y=63], java.awt.Point[x=379,y=16], java.awt.Point[x=319,y=55]]
+Destinations: [java.awt.Point[x=634,y=2], java.awt.Point[x=855,y=33], java.awt.Point[x=726,y=22]]
+ */
+
+        double[] distancesFromOriginAToHubs = { 235.0914715594762, 235.58013498595335, 276.5863337187866, 156.54072952429985, 109.17875251164945};
+        double[] distancesFromOriginBToHubs = { 172.19175357722565, 164.19500601419034, 207.2920644887305, 109.60383204979651, 38.07886552931954};
+        double[] distancesFromOriginCToHubs = { 180.71247881648904, 171.74690681348528, 214.84180226389836, 119.81652640600127, 48.25971404805462};
+
+
+        double[] distHubAToHubs = {0.0, 25.495097567963924, 43.9089968002003, 80.00624975587844, 136.7186892857008};
+        double[] distHubBToHubs = {25.495097567963924, 0.0, 43.104524124504614, 86.83893136145792, 131.4610208388783};
+        double[] distHubCToHubs = { 43.9089968002003, 43.104524124504614, 0.0, 123.30855606972291, 174.18381095842403};
+        double[] distHubDToHubs = {80.00624975587844, 86.83893136145792, 123.30855606972291, 0.0, 71.56116265125938};
+        double[] distHubEToHubs = {136.7186892857008, 131.4610208388783, 174.18381095842403, 71.56116265125938, 0.0};
+
+        double[] distHubAToDep = {183.19934497699495, 400.0799920015996, 271.66523517005265};
+        double[] distHubBToDep = {194.81273059017474, 406.34222030205035, 279.48524111301475};
+        double[] distHubCToDep = {153.62942426501507, 363.24096685258394, 236.57979626333267};
+        double[] distHubDToDep = { 255.38402455909414, 476.3034746881446, 347.0518693221519};
+        double[] distHubEToDep = {319.4276130831522, 536.4513025429242, 408.3356462519529};
+
+        double[][] distancesFromOriginsToHubs = {
                 distancesFromOriginAToHubs,
                 distancesFromOriginBToHubs,
                 distancesFromOriginCToHubs,
-                distancesFromOriginDToHubs,
-                distancesFromOriginEToHubs
         };
 
-
-
-
-
-        int[][] distancesToHubs = {
+        double[][] distancesToHubs = {
                 distHubAToHubs,
                 distHubBToHubs,
                 distHubCToHubs,
@@ -80,7 +101,7 @@ public class HubLocationProblemSmall {
 
 
 
-        int[][] distanceToDep = {
+        double[][] distanceToDep = {
                 distHubAToDep,
                 distHubBToDep,
                 distHubCToDep,
@@ -89,24 +110,7 @@ public class HubLocationProblemSmall {
         };
 
         // Hub openingCosts
-        int[] Fk = {25, 40, 45, 30, 20};
-
-
-        // Create the decision variables
-        List<List<List<List<MPVariable>>>> Xijkm = new ArrayList<>(); // assignmentVars // X_{ijkm}
-        for (int i = 0; i < amountOrigins; i++) {
-            Xijkm.add(new ArrayList<>()); // List<List<MPVariable>>
-            for (int j = 0; j < amountDestinations; j++) {
-                Xijkm.get(i).add(new ArrayList<>()); // List<MPVariable>
-                for (int k = 0; k < amountHubs; k++) {
-                    Xijkm.get(i).get(j).add(new ArrayList<>()); // MPVariable
-                    for (int m = 0; m < amountHubs; m++) {
-                        Xijkm.get(i).get(j).get(k).add(solver.makeNumVar(0.0, 1.0, "X_" + i + "_" + j + "_" + k + "_" + m));
-                    }
-                }
-            }
-        } // Xijkm
-
+        double[] Fk = {120000, 80000, 50000, 40000, 50000};
 
 
 
@@ -116,7 +120,7 @@ public class HubLocationProblemSmall {
                 for (int k = 0; k < amountHubs; k++) {
                     for (int m = 0; m < amountHubs; m++) {
 
-                        var Cik = distancesFromOriginsToHubs[i][k];  //+ distanceOrigins[i];
+                        var Cik = distancesFromOriginsToHubs[i][k];  
 
                         var Ckm = distancesToHubs[k][m];
 
@@ -129,12 +133,26 @@ public class HubLocationProblemSmall {
         } // Cijkm
 
 
-
+        // Create the decision variables
+        List<List<List<List<MPVariable>>>> Xijkm = new ArrayList<>(); // assignmentVars
+        for (int i = 0; i < amountOrigins; i++) {
+            Xijkm.add(new ArrayList<>()); // List<List<List<MPVariable>>>
+            for (int j = 0; j < amountDestinations; j++) {
+                Xijkm.get(i).add(new ArrayList<>()); // List<List<MPVariable>>
+                for (int k = 0; k < amountHubs; k++) {
+                    Xijkm.get(i).get(j).add(new ArrayList<>()); // List<MPVariable>
+                    for (int m = 0; m < amountHubs; m++) {
+                        // MPVariable
+                        Xijkm.get(i).get(j).get(k).add(solver.makeNumVar(0.0, 1.0, "X_" + i + "_" + j + "_" + k + "_" + m));
+                    }
+                }
+            }
+        } // Xijkm
 
         // Creation of the Hubopeningvariable
-        MPVariable[] Yk = new MPVariable[5]; // Y_k
+        MPVariable[] Yk = new MPVariable[amountHubs]; // Y_k
         for (int k = 0; k < amountHubs; k++) {
-                Yk[k]= solver.makeNumVar(0.0, 1, "Y_k_"+ k);
+                Yk[k]= solver.makeBoolVar( "Y_k_"+ k);
         }
 
 
@@ -153,7 +171,7 @@ public class HubLocationProblemSmall {
             }
         }
 
-        for (int k = 0; k < 5 ; k++) {
+        for (int k = 0; k < amountHubs ; k++) {
            obj.setCoefficient(Yk[k], Fk[k]);
 
         }
