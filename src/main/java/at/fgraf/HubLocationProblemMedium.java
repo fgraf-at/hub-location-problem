@@ -17,7 +17,7 @@ public class HubLocationProblemMedium {
         Loader.loadNativeLibraries();
 
         // creation of a solver
-        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
 
         int amountOrigins = 16;
         int amountDestinations = 48;
@@ -32,7 +32,8 @@ public class HubLocationProblemMedium {
 
         double[][] Wij =  new double[demandOrigins.length][demandDestinations.length];
 
-        for (int i = 0; i < demandOrigins.length; i++) {            for (int j = 0; j < demandDestinations.length; j++) {
+        for (int i = 0; i < demandOrigins.length; i++) {
+            for (int j = 0; j < demandDestinations.length; j++) {
                 Wij[i][j] = demandOrigins[i] + demandDestinations[j];
             }
         }
@@ -173,7 +174,7 @@ public class HubLocationProblemMedium {
                 for (int k = 0; k < amountHubs; k++) {
                     for (int m = 0; m < amountHubs; m++) {
 
-                        var Cik = distancesFromOriginsToHubs[i][k];  //+ distanceOrigins[i];
+                        var Cik = distancesFromOriginsToHubs[i][k];
 
                         var Ckm = distancesToHubs[k][m];
 

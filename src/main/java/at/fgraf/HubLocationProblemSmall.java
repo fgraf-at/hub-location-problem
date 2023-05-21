@@ -17,7 +17,7 @@ public class HubLocationProblemSmall {
         Loader.loadNativeLibraries();
 
         // creation of a solver
-        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
+        MPSolver solver = new MPSolver("Hub Location Problem", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
 
         int amountOrigins = 3;
         int amountDestinations = 3;
@@ -203,23 +203,27 @@ Destinations: [java.awt.Point[x=634,y=2], java.awt.Point[x=855,y=33], java.awt.P
                         c2.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
                         c2.setCoefficient(Yk[k], -1);
 
+                        MPConstraint c3 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c_3" + i + "_" + j + "_" + k + "_" + m);
+                        c3.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
+                        c3.setCoefficient(Yk[m], -1);
+
                     }
                 }
             }
         } // c2
 
-        // Constraint 3: X_ijkm less or equal Y_m  i, j, for all i, j, k, m
-        for (int i = 0; i < amountOrigins; i++) {
-            for (int j = 0; j < amountDestinations; j++) {
-                for (int k = 0; k < amountHubs; k++) {
-                    for (int m = 0; m < amountHubs; m++) {
-                        MPConstraint c3 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c_3" + i + "_" + j + "_" + k + "_" + m);
-                        c3.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
-                        c3.setCoefficient(Yk[m], -1);
-                    }
-                }
-            }
-        } // c3
+//        // Constraint 3: X_ijkm less or equal Y_m  i, j, for all i, j, k, m
+//        for (int i = 0; i < amountOrigins; i++) {
+//            for (int j = 0; j < amountDestinations; j++) {
+//                for (int k = 0; k < amountHubs; k++) {
+//                    for (int m = 0; m < amountHubs; m++) {
+//                        MPConstraint c3 = solver.makeConstraint(-MPSolver.infinity(), 0.0, "c_3" + i + "_" + j + "_" + k + "_" + m);
+//                        c3.setCoefficient(Xijkm.get(i).get(j).get(k).get(m), 1);
+//                        c3.setCoefficient(Yk[m], -1);
+//                    }
+//                }
+//            }
+//        } // c3
 
 
 
