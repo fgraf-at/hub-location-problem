@@ -259,18 +259,7 @@ public class HubLocationProblemMedium {
             return;
         }
 
-//        for (int i = 0; i < amountOrigins; i++) {
-//            for (int j = 0; j < amountDestinations; j++) {
-//
-//                for (int k = 0; k < amountHubs; k++) {
-//                    for (int m = 0; m < amountHubs; m++) {
-//                        if( Xijkm.get(i).get(j).get(k).get(m).solutionValue() > 0) {
-//                            System.out.println("OD pair (" + i + ", " + (amountOrigins+ j) + ") routed through hubs " + k + " and " + (m));
-//                        }
-//                    }
-//                }
-//            }
-//        }
+
         Instant endTime = Instant.now();
         System.out.println("\nSolution:");
         System.out.println("Objective value = " + solver.objective().value());
